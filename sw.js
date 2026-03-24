@@ -23,14 +23,19 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first, fallback to cache
+  // Only handle http/https requests, skip chrome-extension etc.
+  if (!e.request.url.startsWith('http')) return;
+
   e.respondWith(
     fetch(e.request)
       .then(response => {
-        // Cache successful responses
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        if (response.ok && e.request.method === 'GET') {
+          try {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              try { cache.put(e.request, clone); } catch(err) {}
+            });
+          } catch(err) {}
         }
         return response;
       })
