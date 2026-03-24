@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Vesta Müştereği</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js')}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+--bg:#FAFAF8;--bg2:#F2F1ED;--text:#1A1A18;--text2:#7A7A74;--text3:#ABABAB;
+--border:#E8E7E3;--accent:#C8956C;--accent2:#B07D56;--black:#0A0A0A;
+--card:#FFFFFF;--radius:12px;--font:'DM Sans',system-ui,-apple-system,sans-serif;
+--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+--blue:#4A90D9;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--black);color:var(--text);-webkit-font-smoothing:antialiased}
+#app{height:100%;width:100%;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+input,button,textarea,select{font-family:var(--font);outline:none;border:none}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease;transform:translateX(12px)}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+
+/* Auth */
+.auth{background:var(--black);align-items:center;justify-content:center;padding:40px 32px;overflow-y:auto}
+.auth-logo{width:64px;height:64px;object-fit:contain;margin-bottom:14px}
+.auth h1{font-size:22px;font-weight:500;color:#FAF3E8;letter-spacing:5px}
+.auth p.sub{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-top:5px}
+.auth-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:32px}
+.ai{width:100%;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.1);border-radius:10px;padding:14px 18px;color:#FAF3E8;font-size:14px;letter-spacing:1px;text-align:center;transition:border-color .3s}
+.ai:focus{border-color:rgba(200,149,108,.5)}
+.ai::placeholder{color:rgba(255,255,255,.25)}
+.ai.code{letter-spacing:4px;font-size:16px}
+.ab{width:100%;background:var(--accent);color:var(--black);border-radius:10px;padding:14px;font-size:13px;font-weight:500;letter-spacing:1px;cursor:pointer;transition:background .2s,transform .1s}
+.ab:active{transform:scale(.98);background:var(--accent2)}
+.ab:disabled{opacity:.5;cursor:default;transform:none}
+.ag{width:100%;background:transparent;border:.5px solid rgba(255,255,255,.1);border-radius:10px;padding:14px;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:1px;cursor:pointer}
+.divider{display:flex;align-items:center;gap:12px;width:100%;max-width:320px;margin:20px 0}
+.divider span{flex:1;height:.5px;background:rgba(255,255,255,.07)}
+.divider small{font-size:10px;color:rgba(255,255,255,.2);letter-spacing:1px}
+.auth .hint{font-size:9px;color:rgba(255,255,255,.15);letter-spacing:.5px;text-align:center;line-height:1.6;margin-top:8px}
+
+/* App */
+.app-c{background:var(--bg);height:100%}
+.hdr{padding:calc(12px + var(--safe-top)) 20px 10px;display:flex;justify-content:space-between;align-items:center;background:var(--bg);z-index:10}
+.hdr-logo{font-size:15px;font-weight:500;letter-spacing:2px;color:var(--text)}
+.hdr-logo small{font-size:11px;font-weight:400;letter-spacing:1px;color:var(--text2);margin-left:2px}
+.hdr-icons{display:flex;gap:16px;align-items:center}
+.hdr-icons svg{width:20px;height:20px;color:var(--text2);cursor:pointer}
+.notif-dot{position:relative}
+.notif-dot::after{content:'';position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:#E24B4A}
+
+/* Global devir counter */
+.devir-counter{text-align:center;padding:6px 0;font-size:11px;color:var(--text3);letter-spacing:.5px;border-bottom:.5px solid var(--border);background:var(--bg)}
+.devir-counter strong{color:var(--text);font-weight:500}
+
+/* Categories */
+.cats{padding:2px 20px 10px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.cats::-webkit-scrollbar{display:none}
+.cp{font-size:12px;padding:7px 16px;border-radius:20px;white-space:nowrap;cursor:pointer;transition:all .25s;letter-spacing:.3px;border:.5px solid var(--border);color:var(--text2);background:transparent;flex-shrink:0;scroll-snap-align:start}
+.cp.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* Section headers */
+.sec-hdr{padding:12px 20px 8px;font-size:11px;font-weight:500;color:var(--text2);letter-spacing:.5px;text-transform:lowercase}
+
+/* Vitrin */
+.vit{flex:1;overflow-y:auto;padding:0 16px 16px;-webkit-overflow-scrolling:touch}
+.vit::-webkit-scrollbar{display:none}
+.vg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ic{border-radius:var(--radius);border:.5px solid var(--border);overflow:hidden;background:var(--card);cursor:pointer;transition:transform .2s}
+.ic:active{transform:scale(.97)}
+.ic-img{width:100%;aspect-ratio:1;background:var(--bg2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ic-img img{width:100%;height:100%;object-fit:cover}
+.ic-ph{color:var(--text3);opacity:.35}
+.ic-info{padding:10px 12px}
+.ic-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic-meta{font-size:10px;color:var(--text3);margin-bottom:10px}
+.ic-btn{width:100%;background:transparent;border:.5px solid var(--border);border-radius:8px;padding:9px;font-size:11px;color:var(--text);cursor:pointer;letter-spacing:.5px;font-weight:500;transition:all .2s}
+.ic-btn:active{background:var(--bg2)}
+.ic-btn.done{color:var(--text3);border-color:var(--bg2);cursor:default}
+.ic-expire{font-size:9px;color:var(--accent);margin-top:4px;text-align:center}
+
+/* Skeleton loading */
+.skel{background:linear-gradient(90deg,var(--bg2) 25%,#E8E7E3 50%,var(--bg2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{border-radius:var(--radius);overflow:hidden}
+.skel-img{width:100%;aspect-ratio:1}
+.skel-text{height:14px;margin:10px 12px 6px;width:70%;border-radius:4px}
+.skel-text2{height:10px;margin:0 12px 12px;width:50%;border-radius:4px}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center}
+.empty p{font-size:13px;color:var(--text3);line-height:1.8;letter-spacing:.3px}
+
+/* Nav */
+.bnav{padding:8px 16px calc(12px + var(--safe-bottom));display:flex;justify-content:space-around;background:var(--bg);border-top:.5px solid var(--border);z-index:10}
+.nt{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 12px;position:relative}
+.nt svg{width:20px;height:20px}
+.nt span{font-size:9px;letter-spacing:.5px}
+.nt.on svg,.nt.on span{color:var(--text)}
+.nt:not(.on) svg,.nt:not(.on) span{color:var(--text3)}
+.nt-badge{position:absolute;top:0;right:6px;width:6px;height:6px;border-radius:50%;background:#E24B4A}
+
+/* Form elements */
+.app-i{width:100%;background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px;color:var(--text);margin-bottom:12px;transition:border-color .2s}
+.app-i:focus{border-color:var(--text3)}
+.app-i::placeholder{color:var(--text3)}
+.app-s{width:100%;background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px;color:var(--text);margin-bottom:12px;appearance:none;-webkit-appearance:none}
+.app-btn{width:100%;background:var(--text);color:var(--bg);border-radius:10px;padding:15px;font-size:13px;font-weight:500;letter-spacing:.5px;cursor:pointer;margin-top:8px}
+.app-btn:active{opacity:.9;transform:scale(.98)}
+.app-btn:disabled{opacity:.4;cursor:default;transform:none}
+.btn-outline{background:transparent;color:var(--text);border:.5px solid var(--border)}
+.btn-accent{background:var(--accent);color:var(--black)}
+.btn-danger{background:transparent;color:#E24B4A;border:.5px solid #E24B4A}
+.btn-sm{padding:10px 16px;font-size:12px;margin:0;width:auto}
+
+/* Devret */
+.d-photo{width:100%;aspect-ratio:4/3;border-radius:var(--radius);border:1px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-bottom:20px;background:var(--card);overflow:hidden;position:relative}
+.d-photo img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.d-photo svg{color:var(--text3)}
+.d-photo span{font-size:11px;color:var(--text3)}
+
+/* Messages */
+.ml{flex:1;overflow-y:auto;padding:0 20px;-webkit-overflow-scrolling:touch}
+.ml::-webkit-scrollbar{display:none}
+.mi{display:flex;gap:12px;padding:16px 0;border-bottom:.5px solid var(--border);cursor:pointer}
+.mi:active{opacity:.7}
+.mav{width:40px;height:40px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--text2);flex-shrink:0;overflow:hidden}
+.mav img{width:100%;height:100%;object-fit:cover}
+.mc{flex:1;min-width:0}
+.mc-n{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.mc-p{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-t{font-size:10px;color:var(--text3);margin-top:2px}
+.mbadge{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px}
+.mi-closed{opacity:.5}
+.mi-closed::after{content:'devir tamamlandı';font-size:9px;color:var(--text3);margin-top:4px}
+
+/* Chat */
+.ch-hdr{padding:calc(12px + var(--safe-top)) 20px 12px;display:flex;align-items:center;gap:12px;border-bottom:.5px solid var(--border);background:var(--bg)}
+.ch-back{cursor:pointer;padding:4px}
+.ch-closed-banner{padding:10px 20px;background:var(--bg2);font-size:11px;color:var(--text3);text-align:center;letter-spacing:.3px}
+.ch-msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.ch-msgs::-webkit-scrollbar{display:none}
+.bbl{max-width:80%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.5;position:relative}
+.bbl.s{align-self:flex-end;background:var(--text);color:var(--bg);border-bottom-right-radius:4px}
+.bbl.r{align-self:flex-start;background:var(--card);border:.5px solid var(--border);color:var(--text);border-bottom-left-radius:4px}
+.bbl-footer{display:flex;align-items:center;gap:6px;margin-top:4px;justify-content:flex-end}
+.bbl-time{font-size:9px}
+.bbl.s .bbl-time{color:rgba(255,255,255,.4)}
+.bbl.r .bbl-time{color:var(--text3)}
+.read-tick{display:inline-flex}
+.read-tick svg{width:12px;height:12px}
+.read-tick.read svg{color:var(--blue)}
+.read-tick:not(.read) svg{color:rgba(255,255,255,.3)}
+.bbl.deleted{font-style:italic;opacity:.5}
+.bbl-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:.5px solid var(--border);display:none;align-items:center;justify-content:center;cursor:pointer}
+.bbl.s:hover .bbl-del,.bbl.s:active .bbl-del{display:flex}
+.ch-bar{padding:12px 16px calc(12px + var(--safe-bottom));display:flex;gap:10px;border-top:.5px solid var(--border);background:var(--bg)}
+.ch-in{flex:1;background:var(--card);border:.5px solid var(--border);border-radius:20px;padding:10px 16px;font-size:13px;color:var(--text)}
+.ch-in::placeholder{color:var(--text3)}
+.ch-send{width:36px;height:36px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+/* Detail */
+.det{background:var(--bg);overflow-y:auto}
+.det-img{width:100%;aspect-ratio:1;background:var(--bg2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.det-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.det-bk{position:absolute;top:calc(12px + var(--safe-top));left:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+.det-body{padding:20px 24px calc(24px + var(--safe-bottom))}
+.det-body h2{font-size:20px;font-weight:500;color:var(--text);margin-bottom:6px}
+.det-body .meta{font-size:12px;color:var(--text3);margin-bottom:16px}
+.det-body .desc{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:24px}
+.det-owner{display:flex;align-items:center;gap:12px;padding:16px 0;border-top:.5px solid var(--border);margin-bottom:16px}
+.det-btn{width:100%;background:var(--text);color:var(--bg);border-radius:12px;padding:16px;font-size:14px;font-weight:500;letter-spacing:.5px;cursor:pointer;text-align:center}
+.det-btn:active{opacity:.9}
+.det-btn.done{background:var(--bg2);color:var(--text3);cursor:default}
+
+/* Request list (for item owner) */
+.req-list{margin-top:16px;border-top:.5px solid var(--border);padding-top:16px}
+.req-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:.5px solid var(--border)}
+.req-actions{display:flex;gap:8px;margin-left:auto}
+
+/* Profile */
+.prof{flex:1;overflow-y:auto;padding-top:calc(var(--safe-top) + 12px)}
+.prof-hdr{text-align:center;padding:20px}
+.prof-av{width:72px;height:72px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500;color:var(--text2);margin:0 auto 12px;overflow:hidden;position:relative;cursor:pointer}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-av-edit{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:8px;text-align:center;padding:3px 0;letter-spacing:.5px}
+.prof-n{font-size:18px;font-weight:500;color:var(--text);letter-spacing:.5px}
+.prof-l{font-size:12px;color:var(--text3);margin-top:4px}
+.prof-stats{display:flex;justify-content:center;gap:32px;margin-top:20px}
+.ps-i{text-align:center}
+.ps-n{font-size:20px;font-weight:500;color:var(--text)}
+.ps-l{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.5px}
+.prof-menu{padding:0 20px}
+.pm-i{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:.5px solid var(--border);cursor:pointer}
+.pm-i span{font-size:14px;color:var(--text)}
+.pm-i svg{color:var(--text3);width:16px;height:16px}
+
+/* Search overlay */
+.search-ov{position:absolute;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s}
+.search-ov.on{opacity:1;pointer-events:all}
+.s-bar{padding:calc(12px + var(--safe-top)) 16px 12px;display:flex;gap:12px;align-items:center}
+.s-in{flex:1;background:var(--bg2);border:none;border-radius:10px;padding:12px 16px;font-size:14px;color:var(--text)}
+.s-in::placeholder{color:var(--text3)}
+.s-cancel{font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap}
+
+/* Admin */
+.admin-badge{display:inline-block;background:var(--accent);color:var(--black);font-size:9px;padding:2px 8px;border-radius:10px;letter-spacing:.5px;margin-left:8px;vertical-align:middle}
+.pending-dot{width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;margin-left:6px}
+.admin-tabs{display:flex;gap:0;border-bottom:.5px solid var(--border);margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
+.admin-tabs::-webkit-scrollbar{display:none}
+.admin-tab{flex-shrink:0;text-align:center;padding:12px 12px;font-size:11px;color:var(--text3);cursor:pointer;letter-spacing:.3px;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap}
+.admin-tab.on{color:var(--text);border-bottom-color:var(--text)}
+.code-card{padding:12px;border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:var(--card)}
+.code-type{font-size:9px;padding:2px 8px;border-radius:10px;letter-spacing:.5px}
+.code-admin{background:var(--accent);color:var(--black)}
+.code-member{background:var(--bg2);color:var(--text2)}
+.user-card{padding:14px;border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:var(--card);display:flex;gap:12px;align-items:center}
+.user-card-av{width:40px;height:40px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--text2);overflow:hidden;flex-shrink:0}
+.user-card-av img{width:100%;height:100%;object-fit:cover}
+.suspended-badge{font-size:9px;color:#E24B4A;border:1px solid #E24B4A;padding:1px 6px;border-radius:8px}
+
+/* Stat cards */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:14px;text-align:center}
+.stat-card .num{font-size:22px;font-weight:500;color:var(--text)}
+.stat-card .lbl{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:.5px}
+
+/* Notification bell */
+.notif-list{flex:1;overflow-y:auto;padding:0 20px}
+.notif-item{padding:14px 0;border-bottom:.5px solid var(--border);display:flex;gap:12px}
+.notif-icon{width:32px;height:32px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-body{flex:1}
+.notif-title{font-size:13px;font-weight:500;color:var(--text)}
+.notif-text{font-size:12px;color:var(--text3);margin-top:2px}
+.notif-time{font-size:10px;color:var(--text3);margin-top:4px}
+.notif-unread{background:rgba(200,149,108,.08)}
+
+/* Toast */
+.toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:12px 24px;border-radius:20px;font-size:12px;letter-spacing:.5px;opacity:0;transition:all .4s ease;pointer-events:none;z-index:200;white-space:nowrap;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Pull to refresh */
+.ptr{text-align:center;padding:12px;font-size:11px;color:var(--text3);display:none}
+.ptr.show{display:block}
+
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp .4s ease forwards}
+.d1{animation-delay:.08s;opacity:0}.d2{animation-delay:.16s;opacity:0}.d3{animation-delay:.24s;opacity:0}.d4{animation-delay:.32s;opacity:0}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading" style="height:100%;background:#0A0A0A"><div class="spinner"></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============================================
+// VESTA MÜŞTEREĞİ v3 — Application Code
+// ============================================
+const SB_URL='https://bhldeqlxyizuqxrqkjzu.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJobGRlcWx4eWl6dXF4cnFranp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDYzOTgsImV4cCI6MjA4OTkyMjM5OH0.X65chXvc7wuRV-twnTM-X_BN-yeQ5EwYC7I-TKS8vyM';
+let sb;try{if(typeof supabase!=='undefined')sb=supabase.createClient(SB_URL,SB_KEY)}catch(e){console.warn('SB fail',e)}
+const MM={gone:["Bu eşya yeni bir hayata geçti.","Sahibini buldu, yola çıktı.","Bir kapı kapandı, bir yuva açıldı.","Devredildi. Güle güle kullansın."],emptyV:["Şu an dolaşımda bir şey yok.","Vitrin dinleniyor.","Beklemedeyiz. Güzel şeyler yolda."],emptyM:["Henüz bir konuşma yok.","Bir eşya talep et, sohbet başlasın."],welcome:["Hoş geldin. Eşyalar seni bekliyordu.","İçeri buyur. Vitrin hazır."],requested:["Talebin iletildi.","Eşya sahibine haber verdik."]};
+const rm=k=>{const a=MM[k];return a[Math.floor(Math.random()*a.length)]};
+const CATS=["tümü","ev","elektronik","çocuk","spor","kitap","giyim","diğer"];
+const ITEM_MAX_DAYS=14;
+let S={screen:'invite',tab:'vitrin',user:null,cat:'tümü',searchOpen:false,searchQ:'',selItem:null,selChat:null,items:[],archivedItems:[],myRequests:new Set(),itemRequests:[],conversations:[],messages:[],pendingItems:[],adminTab:'stats',photoFile:null,photoPreview:null,allUsers:[],allCodes:[],totalDevir:0,loading:true,notifications:[],unreadNotifs:0};
+function saveUser(u){if(u)localStorage.setItem('vesta_user',JSON.stringify(u));else localStorage.removeItem('vesta_user')}
+function loadUser(){try{return JSON.parse(localStorage.getItem('vesta_user'))}catch{return null}}
+function q(s,e,f){const el=document.querySelector(s);if(el)el.addEventListener(e,f)}
+function v(s){const el=document.querySelector(s);return el?el.value.trim():''}
+function toast(m){setTimeout(()=>{const t=document.getElementById('toast');if(t){t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}},50)}
+function timeAgo(d){const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'az önce';if(s<3600)return Math.floor(s/60)+'dk';if(s<86400)return Math.floor(s/3600)+'sa';return Math.floor(s/86400)+'g'}
+function generateCode(type){const w=['vesta','devir','komsu','ocak','ates','yuva','kapi','yol'];const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return((type==='admin'?'VM':'VU')+w[Math.floor(Math.random()*w.length)]+s).toUpperCase()}
+function compressImage(file,maxW=800,quality=0.7){return new Promise(resolve=>{const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*maxW/w);w=maxW}canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);canvas.toBlob(blob=>resolve(new File([blob],file.name,{type:'image/jpeg'})),'image/jpeg',quality)};img.src=e.target.result};reader.readAsDataURL(file)})}
+const IC={search:'<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>',home:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',chat:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',user:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',back:'<path d="M15 18l-6-6 6-6"/>',right:'<path d="M9 18l6-6-6-6"/>',send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',photo:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',check:'<polyline points="20 6 9 17 4 12"/>',checks:'<path d="M18 6L7 17l-5-5"/><path d="M22 10l-11 11-1.5-1.5"/>',x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',cam:'<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>',copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>',bell:'<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',archive:'<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',megaphone:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',ban:'<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',heart:'<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>'};
+const icon=(n,w=20)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${IC[n]}</svg>`;
+
+// DB
+async function dbRPC(fn,params={}){if(!sb)return null;const{data,error}=await sb.rpc(fn,params);if(error)console.error(fn,error);return data}
+async function dbCheckInvite(code){if(!sb)return{valid:true,type:'admin'};const{data}=await sb.from('invite_codes').select('*').eq('code',code.toUpperCase()).eq('used',false).single();if(!data)return{valid:false};return{valid:true,id:data.id,type:data.code_type||'admin'}}
+async function dbUseInvite(id,uid){if(!sb)return;await sb.from('invite_codes').update({used:true,used_by:uid,used_at:new Date().toISOString()}).eq('id',id)}
+async function dbCreateUser(u){if(!sb)return{...u,id:'demo'};const h=await dbRPC('hash_password',{pass:u.password});const{data,error}=await sb.from('users').insert({name:u.name,location:u.location,phone:u.phone,email:u.email||null,password_hash:h,needs_approval:u.needs_approval||false,approved:!u.needs_approval,invited_by_code:u.invited_by_code||null}).select().single();if(error){console.error(error);return null}return data}
+async function dbLogin(phone,password){if(!sb)return null;const{data:users}=await sb.from('users').select('*').eq('phone',phone);if(!users?.length)return null;const u=users[0];const ok=await dbRPC('verify_password',{pass:password,hashed:u.password_hash});return ok?u:null}
+async function dbGetItems(){if(!sb)return[];await dbRPC('expire_old_items');const{data}=await sb.from('items').select('*, owner:users(id,name,location,avatar_url)').eq('status','active').order('created_at',{ascending:false}).limit(30);return data||[]}
+async function dbGetArchivedItems(){if(!sb)return[];const{data}=await sb.from('items').select('*, owner:users(name)').eq('status','archived').order('created_at',{ascending:false}).limit(50);return data||[]}
+async function dbGetPending(){if(!sb)return[];const{data}=await sb.from('items').select('*, owner:users(name)').eq('status','pending').order('created_at',{ascending:false});return data||[]}
+async function dbCreateItem(item){if(!sb)return null;item.expires_at=new Date(Date.now()+ITEM_MAX_DAYS*86400000).toISOString();const{data}=await sb.from('items').insert(item).select().single();return data}
+async function dbApproveItem(id){if(!sb)return;await sb.from('items').update({status:'active',approved_at:new Date().toISOString(),expires_at:new Date(Date.now()+ITEM_MAX_DAYS*86400000).toISOString()}).eq('id',id)}
+async function dbRejectItem(id){if(!sb)return;await sb.from('items').update({status:'expired'}).eq('id',id)}
+async function dbCreateRequest(iid,rid){if(!sb)return;await sb.from('requests').insert({item_id:iid,requester_id:rid})}
+async function dbGetMyRequests(uid){if(!sb)return[];const{data}=await sb.from('requests').select('item_id').eq('requester_id',uid);return(data||[]).map(r=>r.item_id)}
+async function dbGetItemRequests(iid){if(!sb)return[];const{data}=await sb.from('requests').select('*, requester:users(id,name,avatar_url,location)').eq('item_id',iid).eq('status','pending');return data||[]}
+async function dbCompleteDevir(iid,rid){if(!sb)return;await dbRPC('complete_devir',{p_item_id:iid,p_requester_id:rid})}
+async function dbGetConversations(uid){if(!sb)return[];const{data}=await sb.from('conversations').select('*, item:items(name,status), p1:users!conversations_participant_1_fkey(id,name,avatar_url), p2:users!conversations_participant_2_fkey(id,name,avatar_url), messages(content,created_at,sender_id,read)').or(`participant_1.eq.${uid},participant_2.eq.${uid}`).order('created_at',{ascending:false});return data||[]}
+async function dbGetOrCreateConv(iid,p1,p2){if(!sb)return{id:'demo'};const{data:ex}=await sb.from('conversations').select('*').eq('item_id',iid).or(`and(participant_1.eq.${p1},participant_2.eq.${p2}),and(participant_1.eq.${p2},participant_2.eq.${p1})`).single();if(ex)return ex;const{data}=await sb.from('conversations').insert({item_id:iid,participant_1:p1,participant_2:p2}).select().single();return data}
+async function dbGetMessages(cid){if(!sb)return[];const{data}=await sb.from('messages').select('*').eq('conversation_id',cid).eq('deleted',false).order('created_at');return data||[]}
+async function dbSendMessage(cid,sid,content){if(!sb)return null;const{data}=await sb.from('messages').insert({conversation_id:cid,sender_id:sid,content}).select().single();return data}
+async function dbMarkRead(cid,uid){if(!sb)return;await sb.from('messages').update({read:true,read_at:new Date().toISOString()}).eq('conversation_id',cid).neq('sender_id',uid).eq('read',false)}
+async function dbDeleteMessage(mid){if(!sb)return;await sb.from('messages').update({deleted:true,content:'bu mesaj silindi'}).eq('id',mid)}
+async function dbUploadPhoto(file,folder='items'){if(!sb)return null;const c=await compressImage(file);const p=`${folder}/${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`;const{error}=await sb.storage.from('photos').upload(p,c);if(error){console.error(error);return null}return sb.storage.from('photos').getPublicUrl(p).data?.publicUrl||null}
+async function dbUpdateUser(uid,f){if(!sb)return null;const{data}=await sb.from('users').update(f).eq('id',uid).select().single();return data}
+async function dbChangePassword(uid,old,np){if(!sb)return{ok:false,msg:'bağlantı yok'};const{data:u}=await sb.from('users').select('password_hash').eq('id',uid).single();if(!u)return{ok:false,msg:'bulunamadı'};const ok=await dbRPC('verify_password',{pass:old,hashed:u.password_hash});if(!ok)return{ok:false,msg:'mevcut şifre hatalı'};const h=await dbRPC('hash_password',{pass:np});await sb.from('users').update({password_hash:h}).eq('id',uid);return{ok:true}}
+async function dbSuspendUser(uid,s){if(!sb)return;await sb.from('users').update({suspended:s}).eq('id',uid)}
+async function dbApproveUser(uid){if(!sb)return;await sb.from('users').update({approved:true,needs_approval:false}).eq('id',uid)}
+async function dbCreateInviteCodes(codes,by,type){if(!sb)return;await sb.from('invite_codes').insert(codes.map(c=>({code:c.toUpperCase(),created_by:by,code_type:type})))}
+async function dbGetInviteCodes(){if(!sb)return[];const{data}=await sb.from('invite_codes').select('*, used_user:users!invite_codes_used_by_fkey(name)').order('created_at',{ascending:false});return data||[]}
+async function dbGetAllUsers(){if(!sb)return[];const{data}=await sb.from('users').select('*').order('created_at',{ascending:false});return data||[]}
+async function dbGetGlobalStats(){if(!sb)return{total_devir:0};const{data}=await sb.from('global_stats').select('*').eq('id',1).single();return data||{total_devir:0}}
+async function dbGetNotifications(uid){if(!sb)return[];const{data}=await sb.from('notifications').select('*').or(`user_id.eq.${uid},global.eq.true`).order('created_at',{ascending:false}).limit(50);return data||[]}
+async function dbSendGlobalNotif(title,body){if(!sb)return;await sb.from('notifications').insert({title,body,global:true,type:'admin'})}
+async function dbMarkNotifRead(id){if(!sb)return;await sb.from('notifications').update({read:true}).eq('id',id)}
+
+// Realtime
+function setupRealtime(){if(!sb||!S.user)return;sb.channel('vesta-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{if(S.selChat&&S.messages){const m=p.new;if(!S.messages.find(x=>x.id===m.id)&&!m.deleted){S.messages.push(m);renderChatMsgs();scrollChat()}}}).on('postgres_changes',{event:'*',schema:'public',table:'items'},()=>loadItems()).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},()=>loadNotifications()).subscribe()}
+
+// Loaders
+async function loadItems(){S.items=await dbGetItems();if(S.screen==='app'&&S.tab==='vitrin'&&!S.selItem&&!S.selChat)R()}
+async function loadMyRequests(){if(!S.user)return;S.myRequests=new Set(await dbGetMyRequests(S.user.id))}
+async function loadConversations(){if(!S.user)return;S.conversations=await dbGetConversations(S.user.id)}
+async function loadPending(){if(!S.user?.is_admin)return;S.pendingItems=await dbGetPending()}
+async function loadAllUsers(){if(!S.user?.is_admin)return;S.allUsers=await dbGetAllUsers()}
+async function loadAllCodes(){if(!S.user?.is_admin)return;S.allCodes=await dbGetInviteCodes()}
+async function loadGlobalStats(){const s=await dbGetGlobalStats();S.totalDevir=s.total_devir||0}
+async function loadNotifications(){if(!S.user)return;S.notifications=await dbGetNotifications(S.user.id);S.unreadNotifs=S.notifications.filter(n=>!n.read).length}
+
+// ============================================
+// RENDER
+// ============================================
+function R(){const app=document.getElementById('app');if(S.screen==='invite')app.innerHTML=rInvite();else if(S.screen==='signup')app.innerHTML=rSignup();else if(S.screen==='login')app.innerHTML=rLogin();else if(S.screen==='app')app.innerHTML=rApp();bind()}
+function rInvite(){return`<div class="screen auth active"><img src="logo.png" class="auth-logo fu" alt="V"/><h1 class="fu d1">VESTA</h1><p class="sub fu d2">müştereği</p><div class="auth-form fu d3"><input type="text" class="ai code" id="xCode" placeholder="davet kodu" maxlength="12" autocomplete="off" style="text-transform:uppercase"/><button class="ab" id="xInvite">devam et</button></div><p class="hint fu d4">yalnızca davetli üyeler</p><div class="divider fu d4"><span></span><small>zaten üye misin?</small><span></span></div><div class="auth-form fu d4" style="margin-top:0"><button class="ag" id="xGoLogin">giriş yap</button></div></div>`}
+function rSignup(){return`<div class="screen auth active"><h1 class="fu" style="font-size:16px;letter-spacing:3px">üye ol</h1><p class="sub fu d1" style="letter-spacing:1px">topluluğa katıl</p><div class="auth-form fu d2"><input type="text" class="ai" id="xName" placeholder="adın"/><input type="text" class="ai" id="xLoc" placeholder="mahalle"/><input type="tel" class="ai" id="xPhone" placeholder="telefon"/><input type="email" class="ai" id="xEmail" placeholder="e-posta (opsiyonel)"/><input type="password" class="ai" id="xPass" placeholder="şifre"/></div><div class="auth-form fu d3" style="margin-top:16px"><button class="ab" id="xSignup">topluluğa katıl</button></div><p class="hint fu d4" style="margin-top:16px">davet kodun doğrulandı. artık buradayız.</p></div>`}
+function rLogin(){return`<div class="screen auth active"><img src="logo.png" class="auth-logo fu" alt="V"/><h1 class="fu d1" style="font-size:16px;letter-spacing:3px">giriş</h1><p class="sub fu d2" style="letter-spacing:1px">tekrar hoş geldin</p><div class="auth-form fu d2"><input type="tel" class="ai" id="xLPhone" placeholder="telefon"/><input type="password" class="ai" id="xLPass" placeholder="şifre"/><button class="ab" id="xLogin">giriş yap</button></div><div class="auth-form fu d4" style="margin-top:24px"><button class="ag" id="xBackInv" style="border:none;color:rgba(255,255,255,.2);font-size:11px">← davet kodu ekranına dön</button></div></div>`}
+function rApp(){if(S.selItem)return rDetail();if(S.selChat)return rChat();let c='';const nh=['devret','admin','editprofile','changepass','notifications','archive'];if(S.tab==='vitrin')c=rVitrin();else if(S.tab==='devret')c=rDevret();else if(S.tab==='mesajlar')c=rMsgList();else if(S.tab==='ben')c=rProfile();else if(S.tab==='admin')c=rAdmin();else if(S.tab==='editprofile')c=rEditProfile();else if(S.tab==='changepass')c=rChangePass();else if(S.tab==='notifications')c=rNotifs();else if(S.tab==='archive')c=rArchive();return`<div class="screen app-c active">${!nh.includes(S.tab)?rHdr():''}${S.tab==='vitrin'?`<div class="devir-counter">toplam <strong>${S.totalDevir}</strong> eşya devredildi</div>${rCats()}`:''}${c}${rNav()}${rSearch()}<div class="toast" id="toast"></div></div>`}
+function rHdr(){return`<div class="hdr"><div class="hdr-logo">VESTA <small>müştereği</small></div><div class="hdr-icons"><span id="xSearch">${icon('search')}</span><span id="xNotifs" class="${S.unreadNotifs?'notif-dot':''}">${icon('bell')}</span></div></div>`}
+function rCats(){return`<div class="cats">${CATS.map(c=>`<div class="cp ${S.cat===c?'on':''}" data-cat="${c}">${c}</div>`).join('')}</div>`}
+function rVitrin(){if(S.loading)return rSkel();let items=S.items;if(S.cat!=='tümü')items=items.filter(i=>i.category===S.cat);if(S.searchQ){const qq=S.searchQ.toLowerCase();items=items.filter(i=>i.name.toLowerCase().includes(qq)||i.category.includes(qq)||i.location.toLowerCase().includes(qq))}if(!items.length)return`<div class="vit"><div class="empty"><p>${rm('emptyV')}</p></div></div>`;const now=Date.now();const exp=items.filter(i=>i.expires_at&&new Date(i.expires_at)-now<3*86400000);const fresh=items.filter(i=>!exp.includes(i));let h='<div class="vit">';if(fresh.length)h+=`<div class="vg">${fresh.map((it,i)=>rIC(it,i)).join('')}</div>`;if(exp.length)h+=`<div class="sec-hdr" style="margin-top:16px">yakında kapanacaklar</div><div class="vg">${exp.map((it,i)=>rIC(it,i)).join('')}</div>`;return h+'</div>'}
+function rIC(it,i){const dl=it.expires_at?Math.max(0,Math.ceil((new Date(it.expires_at)-Date.now())/86400000)):null;return`<div class="ic fu ${i>0?'d'+Math.min(i,4):''}" data-item="${it.id}"><div class="ic-img">${it.photo_url?`<img src="${it.photo_url}" loading="lazy">`:`<span class="ic-ph">${icon('photo',32)}</span>`}</div><div class="ic-info"><div class="ic-name">${it.name}</div><div class="ic-meta">${it.category} · ${it.location}</div><button class="ic-btn ${S.myRequests.has(it.id)?'done':''}" data-req="${it.id}">${S.myRequests.has(it.id)?'talep edildi':'talep et'}</button>${dl!==null&&dl<=3?`<div class="ic-expire">${dl===0?'son gün':dl+' gün kaldı'}</div>`:''}</div></div>`}
+function rSkel(){return`<div class="vit"><div class="vg">${Array(4).fill(0).map(()=>'<div class="skel-card"><div class="skel skel-img"></div><div class="skel skel-text"></div><div class="skel skel-text2"></div></div>').join('')}</div></div>`}
+function rDetail(){const it=S.items.find(i=>i.id===S.selItem);if(!it)return'';const done=S.myRequests.has(it.id);const isOwn=S.user&&it.owner?.id===S.user.id;const on=it.owner?.name||'?';let rq='';if(isOwn&&S.itemRequests.length){rq=`<div class="req-list"><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">${S.itemRequests.length} talep geldi</div>${S.itemRequests.map(r=>`<div class="req-item"><div class="mav" style="width:32px;height:32px;font-size:11px">${r.requester?.avatar_url?`<img src="${r.requester.avatar_url}">`:r.requester?.name?.[0]||'?'}</div><div style="flex:1"><div style="font-size:13px;font-weight:500">${r.requester?.name||'?'}</div><div style="font-size:10px;color:var(--text3)">${r.requester?.location||''}</div></div><button class="app-btn btn-sm btn-accent" data-choose="${r.requester?.id}" data-item-choose="${it.id}">seç ve devret</button></div>`).join('')}</div>`}return`<div class="screen det active"><div class="det-img">${it.photo_url?`<img src="${it.photo_url}">`:`<span class="ic-ph">${icon('photo',48)}</span>`}<div class="det-bk" id="xDetBack">${icon('back',18)}</div></div><div class="det-body"><h2 class="fu">${it.name}</h2><div class="meta fu d1">${it.category} · ${it.location}</div><div class="desc fu d2">${it.description||''}</div><div class="det-owner fu d2"><div class="mav">${it.owner?.avatar_url?`<img src="${it.owner.avatar_url}">`:on[0]}</div><div><div style="font-size:14px;font-weight:500">${on}</div><div style="font-size:11px;color:var(--text3)">${isOwn?'senin ilanın':'devretmek istiyor'}</div></div></div>${isOwn?rq:`<button class="det-btn fu d3 ${done?'done':''}" id="xDetReq" data-id="${it.id}">${done?'talep edildi':'talep et'}</button>`}</div><div class="toast" id="toast"></div></div>`}
+function rDevret(){return`<div style="flex:1;overflow-y:auto;padding:calc(20px + var(--safe-top)) 24px 120px"><h2 style="font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:24px" class="fu">devret</h2><div class="d-photo fu d1" id="xPhotoBox">${S.photoPreview?`<img src="${S.photoPreview}">`:`${icon('plus',28)}<span>fotoğraf ekle</span>`}<input type="file" accept="image/*" id="xPhotoIn" style="display:none"/></div><input type="text" class="app-i fu d2" id="xItemName" placeholder="eşya adı (kısa)" maxlength="40"/><select class="app-s fu d2" id="xItemCat"><option value="" disabled selected>kategori seç</option>${CATS.filter(c=>c!=='tümü').map(c=>`<option value="${c}">${c}</option>`).join('')}</select><textarea class="app-i fu d3" id="xItemNote" placeholder="not (opsiyonel)" rows="3" style="resize:none"></textarea><button class="app-btn fu d4" id="xDevret">onaya gönder</button><div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)" class="fu d4">ilanın admin onayından sonra yayınlanır</div></div>`}
+function rMsgList(){if(!S.conversations.length)return`<div class="ml"><div class="empty"><p>${rm('emptyM')}</p></div></div>`;const sorted=[...S.conversations].sort((a,b)=>{const la=a.messages?.length?new Date(a.messages[a.messages.length-1].created_at):new Date(a.created_at);const lb=b.messages?.length?new Date(b.messages[b.messages.length-1].created_at):new Date(b.created_at);return lb-la});return`<div class="ml">${sorted.map((cv,i)=>{const o=cv.participant_1===S.user.id?cv.p2:cv.p1;const l=cv.messages?.length?cv.messages[cv.messages.length-1]:null;const ur=l&&!l.read&&l.sender_id!==S.user.id;const cl=cv.closed;return`<div class="mi fu ${i>0?'d'+Math.min(i,4):''} ${cl?'mi-closed':''}" data-chat="${cv.id}"><div class="mav">${o?.avatar_url?`<img src="${o.avatar_url}">`:(o?.name||'?')[0]}</div><div class="mc"><div class="mc-n">${o?.name||'?'} · <span style="font-weight:400;color:var(--text3)">${cv.item?.name||''}</span></div><div class="mc-p">${l?.content||'konuşma başladı'}</div><div class="mc-t">${l?timeAgo(l.created_at):''} ${cl?'· devir tamamlandı':''}</div></div>${ur&&!cl?'<div class="mbadge"></div>':''}</div>`}).join('')}</div>`}
+function rChat(){const cv=S.conversations.find(c=>c.id===S.selChat);if(!cv)return'';const o=cv.participant_1===S.user.id?cv.p2:cv.p1;const cl=cv.closed;return`<div class="screen app-c active" style="height:100%"><div class="ch-hdr"><div class="ch-back" id="xChatBack">${icon('back')}</div><div class="mav" style="width:32px;height:32px;font-size:12px">${o?.avatar_url?`<img src="${o.avatar_url}">`:(o?.name||'?')[0]}</div><div><div style="font-size:14px;font-weight:500">${o?.name||'?'}</div><div style="font-size:10px;color:var(--text3)">${cv.item?.name||''}</div></div></div>${cl?'<div class="ch-closed-banner">bu eşya devredildi. konuşma sona erdi.</div>':''}<div class="ch-msgs" id="chatMsgs">${rBbl()}</div>${!cl?`<div class="ch-bar"><input type="text" class="ch-in" id="chatIn" placeholder="mesaj yaz..."/><div class="ch-send" id="xSend">${icon('send',16)}</div></div>`:''}</div>`}
+function rBbl(){return S.messages.map(m=>{const mine=m.sender_id===S.user.id;const t=new Date(m.created_at).toLocaleTimeString('tr',{hour:'2-digit',minute:'2-digit'});if(m.deleted)return`<div class="bbl ${mine?'s':'r'} deleted">${m.content}<div class="bbl-footer"><span class="bbl-time">${t}</span></div></div>`;return`<div class="bbl ${mine?'s':'r'}">${m.content}<div class="bbl-footer"><span class="bbl-time">${t}</span>${mine?`<span class="read-tick ${m.read?'read':''}">${icon('checks',12)}</span>`:''}</div>${mine?`<div class="bbl-del" data-delmsg="${m.id}">${icon('x',10)}</div>`:''}</div>`}).join('')}
+function renderChatMsgs(){const el=document.getElementById('chatMsgs');if(el)el.innerHTML=rBbl()}
+function scrollChat(){const el=document.getElementById('chatMsgs');if(el)setTimeout(()=>el.scrollTop=el.scrollHeight,50)}
+function rProfile(){if(!S.user)return'';const u=S.user;return`<div class="prof"><div class="prof-hdr fu"><div class="prof-av" id="xAvatarBox">${u.avatar_url?`<img src="${u.avatar_url}">`:u.name[0].toUpperCase()}<div class="prof-av-edit">${icon('cam',10)} değiştir</div><input type="file" accept="image/*" id="xAvatarIn" style="display:none"/></div><div class="prof-n">${u.name}${u.is_admin?'<span class="admin-badge">admin</span>':''}</div><div class="prof-l">${u.location}</div><div class="prof-stats"><div class="ps-i"><div class="ps-n">${u.items_given||0}</div><div class="ps-l">devretti</div></div><div class="ps-i"><div class="ps-n">${u.items_received||0}</div><div class="ps-l">aldı</div></div></div></div><div class="prof-menu fu d1"><div class="pm-i" id="xEditProfile"><span>profil düzenle</span>${icon('right',16)}</div><div class="pm-i" id="xChangePass"><span>şifre değiştir</span>${icon('right',16)}</div><div class="pm-i" id="xArchive"><span>arşiv</span>${icon('archive',16)}</div>${u.is_admin?`<div class="pm-i" id="xAdmin"><span>admin paneli${S.pendingItems.length?'<span class="pending-dot"></span>':''}</span>${icon('shield',16)}</div>`:''}
+<div class="pm-i" id="xLogout"><span style="color:var(--accent)">çıkış yap</span><span style="color:var(--accent)">${icon('logout',16)}</span></div></div></div>`}
+function rEditProfile(){const u=S.user;return`<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column"><div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px"><span id="xEditBack" style="cursor:pointer">${icon('back')}</span><span style="font-size:16px;font-weight:500">profil düzenle</span></div><div style="padding:0 24px 120px"><div style="font-size:10px;color:var(--text2);margin-bottom:6px;padding-left:4px">ad</div><input type="text" class="app-i" id="xEditName" value="${u.name}"/><div style="font-size:10px;color:var(--text2);margin-bottom:6px;padding-left:4px">mahalle</div><input type="text" class="app-i" id="xEditLoc" value="${u.location}"/><div style="font-size:10px;color:var(--text2);margin-bottom:6px;padding-left:4px">telefon</div><input type="tel" class="app-i" id="xEditPhone" value="${u.phone}"/><div style="font-size:10px;color:var(--text2);margin-bottom:6px;padding-left:4px">e-posta</div><input type="email" class="app-i" id="xEditEmail" value="${u.email||''}"/><button class="app-btn" id="xSaveProfile" style="margin-top:16px">kaydet</button></div></div>`}
+function rChangePass(){return`<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column"><div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px"><span id="xPassBack" style="cursor:pointer">${icon('back')}</span><span style="font-size:16px;font-weight:500">şifre değiştir</span></div><div style="padding:0 24px 120px"><input type="password" class="app-i" id="xOldPass" placeholder="mevcut şifre"/><input type="password" class="app-i" id="xNewPass" placeholder="yeni şifre"/><input type="password" class="app-i" id="xNewPass2" placeholder="yeni şifre tekrar"/><button class="app-btn" id="xSavePass" style="margin-top:16px">şifreyi güncelle</button></div></div>`}
+function rArchive(){return`<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column"><div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px"><span id="xArchiveBack" style="cursor:pointer">${icon('back')}</span><span style="font-size:16px;font-weight:500">arşiv</span></div><div style="padding:0 16px 120px">${S.archivedItems.length?`<div class="vg">${S.archivedItems.map(it=>`<div class="ic" style="opacity:.6"><div class="ic-img">${it.photo_url?`<img src="${it.photo_url}">`:`<span class="ic-ph">${icon('photo',32)}</span>`}</div><div class="ic-info"><div class="ic-name">${it.name}</div><div class="ic-meta">${it.category} · süresi doldu</div></div></div>`).join('')}</div>`:'<div class="empty"><p>arşivde eşya yok</p></div>'}</div></div>`}
+function rNotifs(){return`<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column"><div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px"><span id="xNotifBack" style="cursor:pointer">${icon('back')}</span><span style="font-size:16px;font-weight:500">bildirimler</span></div><div class="notif-list">${S.notifications.length?S.notifications.map(n=>`<div class="notif-item ${n.read?'':'notif-unread'}" data-notif="${n.id}"><div class="notif-icon">${icon(n.type==='admin'?'megaphone':'bell',16)}</div><div class="notif-body"><div class="notif-title">${n.title}</div><div class="notif-text">${n.body}</div><div class="notif-time">${timeAgo(n.created_at)}</div></div></div>`).join(''):'<div class="empty"><p>bildirim yok</p></div>'}</div></div>`}
+function rAdmin(){const tabs=[{id:'stats',l:'istatistik'},{id:'pending',l:'onay'},{id:'codes',l:'kodlar'},{id:'users',l:'üyeler'},{id:'broadcast',l:'duyuru'}];return`<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column"><div style="padding:calc(16px + var(--safe-top)) 20px 0;display:flex;align-items:center;gap:12px"><span id="xAdminBack" style="cursor:pointer">${icon('back')}</span><span style="font-size:16px;font-weight:500">admin paneli</span></div><div class="admin-tabs">${tabs.map(t=>`<div class="admin-tab ${S.adminTab===t.id?'on':''}" data-atab="${t.id}">${t.l}${t.id==='pending'&&S.pendingItems.length?` (${S.pendingItems.length})`:''}</div>`).join('')}</div><div style="flex:1;overflow-y:auto;padding:0 20px 120px">${S.adminTab==='stats'?rAStats():''}${S.adminTab==='pending'?rAPending():''}${S.adminTab==='codes'?rACodes():''}${S.adminTab==='users'?rAUsers():''}${S.adminTab==='broadcast'?rABcast():''}</div></div>`}
+function rAStats(){const tu=S.allUsers.length;const locs={};S.allUsers.forEach(u=>{locs[u.location]=(locs[u.location]||0)+1});const top=Object.entries(locs).sort((a,b)=>b[1]-a[1]).slice(0,3);return`<div class="stat-grid"><div class="stat-card"><div class="num">${S.totalDevir}</div><div class="lbl">toplam devir</div></div><div class="stat-card"><div class="num">${tu}</div><div class="lbl">toplam üye</div></div><div class="stat-card"><div class="num">${S.items.length}</div><div class="lbl">aktif ilan</div></div><div class="stat-card"><div class="num">${S.pendingItems.length}</div><div class="lbl">onay bekliyor</div></div></div><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">en aktif mahalleler</div>${top.map(([l,c])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border);font-size:13px"><span>${l}</span><span style="color:var(--text3)">${c} üye</span></div>`).join('')||'<div style="font-size:12px;color:var(--text3)">veri yok</div>'}`}
+function rAPending(){let h='';if(!S.pendingItems.length)h+='<div style="font-size:12px;color:var(--text3);margin-bottom:24px">bekleyen ilan yok</div>';else h+=S.pendingItems.map(it=>`<div class="code-card"><div style="font-size:14px;font-weight:500;margin-bottom:3px">${it.name}</div><div style="font-size:11px;color:var(--text3);margin-bottom:6px">${it.category} · ${it.owner?.name||'?'}</div>${it.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:10px">${it.description}</div>`:''}<div style="display:flex;gap:8px"><button class="app-btn btn-sm btn-accent" data-approve="${it.id}">onayla</button><button class="app-btn btn-sm btn-outline" data-reject="${it.id}">reddet</button></div></div>`).join('');const pu=S.allUsers.filter(u=>u.needs_approval&&!u.approved);if(pu.length){h+=`<div style="font-size:12px;font-weight:500;color:var(--text2);margin:20px 0 12px">üye onayı</div>`;h+=pu.map(u=>`<div class="user-card"><div class="user-card-av">${u.name[0]}</div><div style="flex:1"><div style="font-size:13px;font-weight:500">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.location}${u.invited_by_code?' · kod:'+u.invited_by_code:''}</div></div><button class="app-btn btn-sm btn-accent" data-approve-user="${u.id}">onayla</button></div>`).join('')}return h}
+function rACodes(){return`<div style="display:flex;gap:8px;margin-bottom:16px"><button class="app-btn btn-sm btn-accent" id="xGenAdmin">admin kodu</button><button class="app-btn btn-sm btn-outline" id="xGenMember">üye kodu</button></div><div style="font-size:10px;color:var(--text3);margin-bottom:16px">admin → direkt üye · üye → onaya düşer</div>${S.allCodes.map(c=>`<div class="code-card" style="display:flex;justify-content:space-between;align-items:center"><div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:14px;font-weight:500;letter-spacing:1px">${c.code}</span><span class="code-type ${c.code_type==='admin'?'code-admin':'code-member'}">${c.code_type||'admin'}</span></div><div style="font-size:10px;color:var(--text3)">${c.used?'kullanıldı — '+(c.used_user?.name||'?'):'aktif'}</div></div><div style="display:flex;align-items:center;gap:8px">${!c.used?`<span class="copy-code" data-copy="${c.code}" style="cursor:pointer;color:var(--text3)">${icon('copy',16)}</span>`:''}
+<div style="width:8px;height:8px;border-radius:50%;background:${c.used?'var(--text3)':'#1D9E75'}"></div></div></div>`).join('')}`}
+function rAUsers(){return S.allUsers.map(u=>`<div class="user-card"><div class="user-card-av">${u.avatar_url?`<img src="${u.avatar_url}">`:u.name[0]}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${u.name}${u.is_admin?'<span class="admin-badge">admin</span>':''}${u.suspended?'<span class="suspended-badge">askıda</span>':''}</div><div style="font-size:11px;color:var(--text3)">${u.location} · ${u.phone}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">devretti:${u.items_given||0} aldı:${u.items_received||0}${u.invited_by_code?' kod:'+u.invited_by_code:''}</div></div>${!u.is_admin?`<button class="app-btn btn-sm ${u.suspended?'btn-accent':'btn-danger'}" style="font-size:10px;padding:6px 10px" data-suspend="${u.id}" data-sus="${u.suspended?'false':'true'}">${u.suspended?'aktifleştir':'askıya al'}</button>`:''}</div>`).join('')}
+function rABcast(){return`<div><div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">genel duyuru gönder</div><input type="text" class="app-i" id="xBcTitle" placeholder="başlık"/><textarea class="app-i" id="xBcBody" placeholder="mesaj" rows="3" style="resize:none"></textarea><button class="app-btn btn-accent" id="xBcSend">tüm üyelere gönder</button></div>`}
+function rNav(){const tabs=[{id:'vitrin',ic:'home',l:'vitrin'},{id:'devret',ic:'plus',l:'devret'},{id:'mesajlar',ic:'chat',l:'mesajlar'},{id:'ben',ic:'user',l:'ben'}];const um=S.conversations.some(c=>{const l=c.messages?.length?c.messages[c.messages.length-1]:null;return l&&!l.read&&l.sender_id!==S.user?.id&&!c.closed});return`<div class="bnav">${tabs.map(t=>`<div class="nt ${S.tab===t.id?'on':''}" data-tab="${t.id}">${icon(t.ic)}<span>${t.l}</span>${t.id==='mesajlar'&&um?'<div class="nt-badge"></div>':''}</div>`).join('')}</div>`}
+function rSearch(){return`<div class="search-ov ${S.searchOpen?'on':''}" id="searchOv"><div class="s-bar"><input type="text" class="s-in" id="searchIn" placeholder="eşya, kategori veya mahalle ara..." value="${S.searchQ}"/><div class="s-cancel" id="xSearchCancel">vazgeç</div></div></div>`}
+
+// ============================================
+// EVENTS
+// ============================================
+function bind(){
+q('#xInvite','click',async()=>{const code=v('#xCode');if(code.length<4)return toast('geçerli bir davet kodu gir');const btn=document.getElementById('xInvite');btn.disabled=true;btn.textContent='kontrol ediliyor...';const r=await dbCheckInvite(code);if(r.valid){S._inviteId=r.id;S._inviteType=r.type;S._inviteCode=code.toUpperCase();S.screen='signup';R()}else{toast('geçersiz veya kullanılmış kod');btn.disabled=false;btn.textContent='devam et'}});
+q('#xGoLogin','click',()=>{S.screen='login';R()});
+q('#xSignup','click',async()=>{const name=v('#xName'),loc=v('#xLoc'),phone=v('#xPhone'),email=v('#xEmail'),pass=v('#xPass');if(!name||!loc||!phone||!pass)return toast('ad, mahalle, telefon ve şifre gerekli');const btn=document.getElementById('xSignup');btn.disabled=true;btn.textContent='kaydediliyor...';const na=S._inviteType==='member';const user=await dbCreateUser({name,location:loc,phone,email,password:pass,needs_approval:na,invited_by_code:S._inviteCode||null});if(!user){toast('kayıt başarısız');btn.disabled=false;btn.textContent='topluluğa katıl';return}if(S._inviteId)await dbUseInvite(S._inviteId,user.id);if(na){toast('admin onayı bekleniyor');setTimeout(()=>{S.screen='invite';R()},2000);return}S.user=user;saveUser(user);S.screen='app';await initApp();R();toast(rm('welcome'))});
+q('#xLogin','click',async()=>{const phone=v('#xLPhone'),pass=v('#xLPass');if(!phone||!pass)return toast('telefon ve şifre gerekli');const btn=document.getElementById('xLogin');btn.disabled=true;btn.textContent='giriş yapılıyor...';const user=await dbLogin(phone,pass);if(!user){toast('kullanıcı bulunamadı veya şifre hatalı');btn.disabled=false;btn.textContent='giriş yap';return}if(user.suspended){toast('hesabın askıya alınmış');btn.disabled=false;btn.textContent='giriş yap';return}if(user.needs_approval&&!user.approved){toast('hesabın henüz onaylanmadı');btn.disabled=false;btn.textContent='giriş yap';return}S.user=user;saveUser(user);S.screen='app';await initApp();R();toast(rm('welcome'))});
+q('#xBackInv','click',()=>{S.screen='invite';R()});
+document.querySelectorAll('.nt[data-tab]').forEach(t=>t.addEventListener('click',async()=>{S.tab=t.dataset.tab;S.selItem=null;S.selChat=null;if(S.tab==='mesajlar')await loadConversations();if(S.tab==='ben'&&S.user?.is_admin)await loadPending();R()}));
+document.querySelectorAll('.cp').forEach(p=>p.addEventListener('click',()=>{S.cat=p.dataset.cat;R()}));
+document.querySelectorAll('.ic[data-item]').forEach(c=>c.addEventListener('click',async e=>{if(e.target.closest('.ic-btn'))return;S.selItem=c.dataset.item;const it=S.items.find(i=>i.id===S.selItem);if(it&&S.user&&it.owner?.id===S.user.id)S.itemRequests=await dbGetItemRequests(S.selItem);R()}));
+document.querySelectorAll('[data-req]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const id=b.dataset.req;if(S.myRequests.has(id))return;S.myRequests.add(id);const it=S.items.find(i=>i.id===id);if(it&&S.user)await dbCreateRequest(id,S.user.id);R();toast(rm('requested'));if(it&&S.user&&it.owner?.id!==S.user.id)await dbGetOrCreateConv(id,S.user.id,it.owner.id)}));
+q('#xDetBack','click',()=>{S.selItem=null;S.itemRequests=[];R()});
+q('#xDetReq','click',async()=>{const id=document.getElementById('xDetReq')?.dataset.id;if(!id||S.myRequests.has(id))return;S.myRequests.add(id);const it=S.items.find(i=>i.id===id);if(it&&S.user)await dbCreateRequest(id,S.user.id);R();toast(rm('requested'));if(it&&S.user&&it.owner?.id!==S.user.id)await dbGetOrCreateConv(id,S.user.id,it.owner.id)});
+document.querySelectorAll('[data-choose]').forEach(b=>b.addEventListener('click',async()=>{const rid=b.dataset.choose,iid=b.dataset.itemChoose;if(!rid||!iid)return;b.disabled=true;b.textContent='devrediliyor...';await dbCompleteDevir(iid,rid);const up=await dbUpdateUser(S.user.id,{});if(up){S.user={...S.user,...up};saveUser(S.user)}await loadItems();await loadGlobalStats();S.selItem=null;S.itemRequests=[];toast(rm('gone'));R()}));
+q('#xSearch','click',()=>{S.searchOpen=true;R();setTimeout(()=>document.getElementById('searchIn')?.focus(),100)});
+q('#xSearchCancel','click',()=>{S.searchOpen=false;S.searchQ='';R()});
+const si=document.getElementById('searchIn');if(si)si.addEventListener('input',e=>{S.searchQ=e.target.value;R();setTimeout(()=>document.getElementById('searchIn')?.focus(),10)});
+q('#xNotifs','click',async()=>{S.tab='notifications';await loadNotifications();R();for(const n of S.notifications.filter(x=>!x.read))await dbMarkNotifRead(n.id);S.unreadNotifs=0});
+q('#xNotifBack','click',()=>{S.tab='vitrin';R()});
+document.querySelectorAll('.mi[data-chat]').forEach(m=>m.addEventListener('click',async()=>{S.selChat=m.dataset.chat;S.messages=await dbGetMessages(S.selChat);await dbMarkRead(S.selChat,S.user.id);R();scrollChat()}));
+q('#xChatBack','click',async()=>{S.selChat=null;S.messages=[];await loadConversations();R()});
+q('#xSend','click',sendMsg);q('#chatIn','keypress',e=>{if(e.key==='Enter')sendMsg()});
+document.querySelectorAll('[data-delmsg]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();await dbDeleteMessage(b.dataset.delmsg);S.messages=await dbGetMessages(S.selChat);renderChatMsgs()}));
+q('#xPhotoBox','click',()=>document.getElementById('xPhotoIn')?.click());const pi=document.getElementById('xPhotoIn');if(pi)pi.addEventListener('change',e=>{const f=e.target.files[0];if(f){S.photoFile=f;S.photoPreview=URL.createObjectURL(f);R()}});
+q('#xDevret','click',async()=>{const name=v('#xItemName'),cat=document.getElementById('xItemCat')?.value,note=v('#xItemNote');if(!name||!cat)return toast('eşya adı ve kategori gerekli');const btn=document.getElementById('xDevret');btn.disabled=true;btn.textContent='gönderiliyor...';let url=null;if(S.photoFile)url=await dbUploadPhoto(S.photoFile);await dbCreateItem({name,description:note,category:cat,location:S.user?.location||'',photo_url:url,owner_id:S.user?.id,status:'pending'});S.photoFile=null;S.photoPreview=null;toast('ilanın onaya gönderildi');setTimeout(()=>{S.tab='vitrin';R()},1200)});
+q('#xAvatarBox','click',()=>document.getElementById('xAvatarIn')?.click());const ai=document.getElementById('xAvatarIn');if(ai)ai.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;toast('yükleniyor...');const url=await dbUploadPhoto(f,'avatars');if(url&&S.user){await dbUpdateUser(S.user.id,{avatar_url:url});S.user.avatar_url=url;saveUser(S.user);R();toast('fotoğraf güncellendi')}});
+q('#xLogout','click',()=>{S.user=null;S.screen='invite';S.tab='vitrin';S.items=[];S.conversations=[];S.messages=[];saveUser(null);R()});
+q('#xEditProfile','click',()=>{S.tab='editprofile';R()});q('#xEditBack','click',()=>{S.tab='ben';R()});
+q('#xSaveProfile','click',async()=>{const name=v('#xEditName'),loc=v('#xEditLoc'),phone=v('#xEditPhone'),email=v('#xEditEmail');if(!name||!loc||!phone)return toast('ad, mahalle ve telefon gerekli');const btn=document.getElementById('xSaveProfile');btn.disabled=true;btn.textContent='kaydediliyor...';const u=await dbUpdateUser(S.user.id,{name,location:loc,phone,email:email||null});if(u){S.user={...S.user,...u};saveUser(S.user);toast('profil güncellendi');S.tab='ben';R()}else{toast('başarısız');btn.disabled=false;btn.textContent='kaydet'}});
+q('#xChangePass','click',()=>{S.tab='changepass';R()});q('#xPassBack','click',()=>{S.tab='ben';R()});
+q('#xSavePass','click',async()=>{const old=v('#xOldPass'),np=v('#xNewPass'),np2=v('#xNewPass2');if(!old||!np||!np2)return toast('tüm alanları doldur');if(np!==np2)return toast('şifreler eşleşmiyor');if(np.length<4)return toast('en az 4 karakter');const btn=document.getElementById('xSavePass');btn.disabled=true;const r=await dbChangePassword(S.user.id,old,np);if(r.ok){toast('şifre güncellendi');S.tab='ben';R()}else{toast(r.msg);btn.disabled=false;btn.textContent='şifreyi güncelle'}});
+q('#xArchive','click',async()=>{S.archivedItems=await dbGetArchivedItems();S.tab='archive';R()});q('#xArchiveBack','click',()=>{S.tab='ben';R()});
+q('#xAdmin','click',async()=>{S.tab='admin';S.adminTab='stats';await Promise.all([loadPending(),loadAllUsers(),loadAllCodes(),loadGlobalStats()]);R()});
+q('#xAdminBack','click',()=>{S.tab='ben';R()});
+document.querySelectorAll('[data-atab]').forEach(t=>t.addEventListener('click',()=>{S.adminTab=t.dataset.atab;R()}));
+q('#xGenAdmin','click',async()=>{const c=generateCode('admin');await dbCreateInviteCodes([c],S.user?.id,'admin');S.allCodes=await dbGetInviteCodes();toast('kod: '+c);R()});
+q('#xGenMember','click',async()=>{const c=generateCode('member');await dbCreateInviteCodes([c],S.user?.id,'member');S.allCodes=await dbGetInviteCodes();toast('kod: '+c);R()});
+document.querySelectorAll('.copy-code').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard?.writeText(b.dataset.copy).then(()=>toast('kopyalandı'))}));
+document.querySelectorAll('[data-approve]').forEach(b=>b.addEventListener('click',async()=>{await dbApproveItem(b.dataset.approve);toast('onaylandı');await Promise.all([loadPending(),loadItems()]);R()}));
+document.querySelectorAll('[data-reject]').forEach(b=>b.addEventListener('click',async()=>{await dbRejectItem(b.dataset.reject);toast('reddedildi');await loadPending();R()}));
+document.querySelectorAll('[data-approve-user]').forEach(b=>b.addEventListener('click',async()=>{await dbApproveUser(b.dataset.approveUser);toast('üye onaylandı');await loadAllUsers();R()}));
+document.querySelectorAll('[data-suspend]').forEach(b=>b.addEventListener('click',async()=>{const s=b.dataset.sus==='true';await dbSuspendUser(b.dataset.suspend,s);toast(s?'askıya alındı':'aktifleştirildi');await loadAllUsers();R()}));
+q('#xBcSend','click',async()=>{const t=v('#xBcTitle'),b=v('#xBcBody');if(!t||!b)return toast('başlık ve mesaj gerekli');await dbSendGlobalNotif(t,b);toast('duyuru gönderildi');document.getElementById('xBcTitle').value='';document.getElementById('xBcBody').value=''});
+}
+async function sendMsg(){const ci=document.getElementById('chatIn');if(!ci||!ci.value.trim()||!S.selChat||!S.user)return;const c=ci.value.trim();ci.value='';const m=await dbSendMessage(S.selChat,S.user.id,c);if(m&&!S.messages.find(x=>x.id===m.id)){S.messages.push(m);renderChatMsgs();scrollChat()}}
+async function initApp(){S.loading=true;R();await Promise.all([loadItems(),loadMyRequests(),loadConversations(),loadGlobalStats(),loadNotifications()]);if(S.user?.is_admin)await Promise.all([loadPending(),loadAllUsers(),loadAllCodes()]);S.loading=false;setupRealtime();R()}
+(async()=>{const s=loadUser();if(s){S.user=s;S.screen='app';await initApp()}else{S.loading=false;R()}})();
+</script></body></html>
