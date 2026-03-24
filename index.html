@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0A0A0A">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Vesta Müştereği</title>
 <link rel="manifest" href="manifest.json">
@@ -207,17 +207,8 @@ input,button,textarea,select{font-family:var(--font);outline:none;border:none}
 <body>
 <div id="app"><div class="loading" style="height:100%;background:#0A0A0A"><div class="spinner"></div></div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Supabase loader with fallback
-var _sbLoaded=false;
-function startApp(){if(!_sbLoaded){_sbLoaded=true;initVesta()}}
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="startApp()" onerror="startApp()"></script>
-<script>
-// Fallback timeout - start app even if CDN is slow
-setTimeout(function(){startApp()},5000);
-
-function initVesta(){
 // ============================================
 // CONFIG
 // ============================================
@@ -1166,8 +1157,6 @@ async function initApp(){
     await initApp();R();
   }else R();
 })();
-
-} // end initVesta
 </script>
 </body>
 </html>
