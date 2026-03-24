@@ -1,0 +1,29 @@
+{
+  "name": "Vesta Müştereği",
+  "short_name": "Vesta",
+  "description": "Topluluk eşya devir platformu. Yalnızca davetli üyeler.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "orientation": "portrait",
+  "lang": "tr",
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
