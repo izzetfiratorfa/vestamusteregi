@@ -12,10 +12,44 @@
   "orientation": "portrait",
   "lang": "tr",
   "dir": "ltr",
-  "iarc_rating_id": "",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "categories": ["social", "lifestyle"],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "scope_extensions": [
     {"origin": "https://bhldeqlxyizuqxrqkjzu.supabase.co"}
+  ],
+  "shortcuts": [
+    {
+      "name": "Vitrin",
+      "short_name": "Vitrin",
+      "description": "Eşyalara göz at",
+      "url": "./index.html?tab=vitrin",
+      "icons": [{"src": "icons/icon-96x96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Devret",
+      "short_name": "Devret",
+      "description": "Eşya devret",
+      "url": "./index.html?tab=devret",
+      "icons": [{"src": "icons/icon-96x96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Mesajlar",
+      "short_name": "Mesajlar",
+      "description": "Mesajlarını gör",
+      "url": "./index.html?tab=mesajlar",
+      "icons": [{"src": "icons/icon-96x96.png", "sizes": "96x96"}]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".webp"]
+      }
+    }
   ],
   "icons": [
     {"src": "icons/icon-48x48.png", "sizes": "48x48", "type": "image/png", "purpose": "any"},
