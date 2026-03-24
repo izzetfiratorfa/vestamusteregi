@@ -441,6 +441,22 @@ async function loadPending(){if(!S.user?.is_admin)return;S.pendingItems=await db
 async function loadAllUsers(){if(!S.user?.is_admin)return;S.allUsers=await dbGetAllUsers()}
 async function loadAllCodes(){if(!S.user?.is_admin)return;S.allCodes=await dbGetInviteCodes()}
 
+async function dbUpdateProfile(userId,fields){
+  if(!sb) return null;
+  const {data,error}=await sb.from('users').update(fields).eq('id',userId).select().single();
+  if(error){console.error(error);return null}
+  return data;
+}
+async function dbChangePassword(userId,oldPass,newPass){
+  if(!sb) return {ok:false,msg:'bağlantı hatası'};
+  const {data:user}=await sb.from('users').select('password_hash').eq('id',userId).single();
+  if(!user) return {ok:false,msg:'kullanıcı bulunamadı'};
+  if(user.password_hash!==oldPass) return {ok:false,msg:'mevcut şifre hatalı'};
+  const {error}=await sb.from('users').update({password_hash:newPass}).eq('id',userId);
+  if(error) return {ok:false,msg:'güncelleme başarısız'};
+  return {ok:true};
+}
+
 // ============================================
 // RENDER
 // ============================================
@@ -516,8 +532,11 @@ function rApp(){
   else if(S.tab==='mesajlar') c=rMsgList();
   else if(S.tab==='ben') c=rProfile();
   else if(S.tab==='admin') c=rAdmin();
+  else if(S.tab==='editprofile') c=rEditProfile();
+  else if(S.tab==='changepass') c=rChangePass();
+  const hideHdr=S.tab==='devret'||S.tab==='admin'||S.tab==='editprofile'||S.tab==='changepass';
   return `<div class="screen app-c active">
-    ${S.tab!=='devret'&&S.tab!=='admin'?rHdr():''}
+    ${!hideHdr?rHdr():''}
     ${S.tab==='vitrin'?rCats():''}
     ${c}
     ${rNav()}
@@ -665,6 +684,8 @@ function rProfile(){
       </div>
     </div>
     <div class="prof-menu fu d1">
+      <div class="pm-i" id="xEditProfile"><span>profil düzenle</span>${icon('right',16)}</div>
+      <div class="pm-i" id="xChangePass"><span>şifre değiştir</span>${icon('right',16)}</div>
       ${u.is_admin?`<div class="pm-i" id="xAdmin"><span>admin paneli${S.pendingItems.length?'<span class="pending-dot"></span>':''}</span>${icon('shield',16)}</div>`:''}
       <div class="pm-i" id="xLogout"><span style="color:var(--accent)">çıkış yap</span><span style="color:var(--accent)">${icon('logout',16)}</span></div>
     </div>
@@ -672,6 +693,54 @@ function rProfile(){
 }
 
 // ---- ADMIN ----
+function rEditProfile(){
+  const u=S.user;
+  return `<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+    <div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px">
+      <span id="xEditBack" style="cursor:pointer">${icon('back')}</span>
+      <span style="font-size:16px;font-weight:500;letter-spacing:1px">profil düzenle</span>
+    </div>
+    <div style="padding:0 24px 120px">
+      <div style="text-align:center;margin-bottom:28px">
+        <div class="prof-av" id="xEditAvatarBox" style="margin:0 auto 8px;cursor:pointer">
+          ${u.avatar_url?`<img src="${u.avatar_url}">`:u.name[0].toUpperCase()}
+          <div class="prof-av-edit">${icon('cam',10)} değiştir</div>
+          <input type="file" accept="image/*" id="xEditAvatarIn" style="display:none"/>
+        </div>
+        <div style="font-size:10px;color:var(--text3)">fotoğrafa dokun</div>
+      </div>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">ad</div>
+      <input type="text" class="app-i" id="xEditName" value="${u.name}" placeholder="adın"/>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">mahalle</div>
+      <input type="text" class="app-i" id="xEditLoc" value="${u.location}" placeholder="mahalle"/>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">telefon</div>
+      <input type="tel" class="app-i" id="xEditPhone" value="${u.phone}" placeholder="telefon"/>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">e-posta</div>
+      <input type="email" class="app-i" id="xEditEmail" value="${u.email||''}" placeholder="e-posta (opsiyonel)"/>
+      <button class="app-btn" id="xSaveProfile" style="margin-top:16px">kaydet</button>
+    </div>
+  </div>`;
+}
+
+function rChangePass(){
+  return `<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+    <div style="padding:calc(16px + var(--safe-top)) 20px 16px;display:flex;align-items:center;gap:12px">
+      <span id="xPassBack" style="cursor:pointer">${icon('back')}</span>
+      <span style="font-size:16px;font-weight:500;letter-spacing:1px">şifre değiştir</span>
+    </div>
+    <div style="padding:0 24px 120px">
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">mevcut şifre</div>
+      <input type="password" class="app-i" id="xOldPass" placeholder="mevcut şifren"/>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">yeni şifre</div>
+      <input type="password" class="app-i" id="xNewPass" placeholder="yeni şifre"/>
+      <div style="font-size:10px;color:var(--text2);letter-spacing:.5px;margin-bottom:6px;padding-left:4px">yeni şifre tekrar</div>
+      <input type="password" class="app-i" id="xNewPass2" placeholder="yeni şifre tekrar"/>
+      <button class="app-btn" id="xSavePass" style="margin-top:16px">şifreyi güncelle</button>
+    </div>
+  </div>`;
+}
+
+// ---- ADMIN (panel) ----
 function rAdmin(){
   const tabs=[{id:'pending',label:'onay bekleyen'},{id:'codes',label:'davet kodları'},{id:'users',label:'üyeler'}];
   return `<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
@@ -953,6 +1022,55 @@ function bind(){
     S.user=null;S.screen='invite';S.tab='vitrin';S.selItem=null;S.selChat=null;S.myRequests.clear();
     S.items=[];S.conversations=[];S.messages=[];S.pendingItems=[];S.allUsers=[];S.allCodes=[];
     saveUser(null);R();
+  });
+
+  // Edit Profile
+  q('#xEditProfile','click',()=>{S.tab='editprofile';R()});
+  q('#xEditBack','click',()=>{S.tab='ben';R()});
+  q('#xEditAvatarBox','click',()=>document.getElementById('xEditAvatarIn')?.click());
+  const eai=document.getElementById('xEditAvatarIn');
+  if(eai) eai.addEventListener('change',async e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    toast('yükleniyor...');
+    const url=await dbUploadPhoto(f,'avatars');
+    if(url&&S.user){
+      await dbUpdateAvatar(S.user.id,url);
+      S.user.avatar_url=url;saveUser(S.user);R();
+      toast('fotoğraf güncellendi');
+    }
+  });
+  q('#xSaveProfile','click',async()=>{
+    const name=v('#xEditName'),loc=v('#xEditLoc'),phone=v('#xEditPhone'),email=v('#xEditEmail');
+    if(!name||!loc||!phone) return toast('ad, mahalle ve telefon gerekli');
+    const btn=document.getElementById('xSaveProfile');
+    btn.disabled=true;btn.textContent='kaydediliyor...';
+    const updated=await dbUpdateProfile(S.user.id,{name,location:loc,phone,email:email||null});
+    if(updated){
+      S.user={...S.user,...updated};saveUser(S.user);
+      toast('profil güncellendi');S.tab='ben';R();
+    }else{
+      toast('güncelleme başarısız');btn.disabled=false;btn.textContent='kaydet';
+    }
+  });
+
+  // Change Password
+  q('#xChangePass','click',()=>{S.tab='changepass';R()});
+  q('#xPassBack','click',()=>{S.tab='ben';R()});
+  q('#xSavePass','click',async()=>{
+    const old=v('#xOldPass'),np=v('#xNewPass'),np2=v('#xNewPass2');
+    if(!old||!np||!np2) return toast('tüm alanları doldur');
+    if(np!==np2) return toast('yeni şifreler eşleşmiyor');
+    if(np.length<4) return toast('şifre en az 4 karakter olmalı');
+    const btn=document.getElementById('xSavePass');
+    btn.disabled=true;btn.textContent='güncelleniyor...';
+    const r=await dbChangePassword(S.user.id,old,np);
+    if(r.ok){
+      S.user.password_hash=np;saveUser(S.user);
+      toast('şifre güncellendi');S.tab='ben';R();
+    }else{
+      toast(r.msg);btn.disabled=false;btn.textContent='şifreyi güncelle';
+    }
   });
 
   // Admin
